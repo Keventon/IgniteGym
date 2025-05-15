@@ -5,6 +5,7 @@ import {
   Text,
   Heading,
   ScrollView,
+  useToast,
 } from "@gluestack-ui/themed";
 
 import BackgrundImg from "@assets/background.png";
@@ -17,6 +18,11 @@ import { useNavigation } from "@react-navigation/native";
 import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { api } from "@services/api";
+import axios from "axios";
+import { ToastMessage } from "@components/ToastMessage";
+import { BackHandler } from "react-native";
+import { AppError } from "@utils/AppError";
 
 type FormDataProps = {
   name: string;
@@ -54,13 +60,46 @@ export function SignUp() {
   });
 
   const navigation = useNavigation<AuthNavigatorRoutesProps>();
+  const toast = useToast();
 
   function handleNavigateToSignIn() {
     navigation.goBack();
   }
 
-  function handleSignUp(data: FormDataProps) {
-    console.log(data);
+  async function handleSignUp({ name, email, password }: FormDataProps) {
+    try {
+      const response = await api.post("/users", { name, email, password });
+      console.log(response.data);
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+
+      const title = isAppError
+        ? error.message
+        : "Não foi possível criar a conta. Tente novamente mais tarde.";
+
+      toast.show({
+        placement: "top",
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            title={title}
+            action="error"
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+    }
+  }
+
+  if (!(BackHandler as any).removeEventListener) {
+    (BackHandler as any).removeEventListener = (
+      eventName: string,
+      handler: () => boolean
+    ) => {
+      console.warn(
+        "BackHandler.removeEventListener está obsoleto. Use subscription.remove()"
+      );
+    };
   }
 
   return (

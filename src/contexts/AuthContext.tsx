@@ -1,12 +1,16 @@
 import { UserDTO } from "@dtos/userDTO";
-import { set } from "@gluestack-style/react";
 import { api } from "@services/api";
-import { storageUserGet, storageUserSave } from "@storage/storageUser";
+import {
+  storageUserGet,
+  storageUserRemove,
+  storageUserSave,
+} from "@storage/storageUser";
 import { createContext, useEffect, useState } from "react";
 
 export type AuthContextDataProps = {
   user: UserDTO;
   signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
   isLoadingStorageData: boolean;
 };
 
@@ -49,12 +53,26 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
     }
   }
 
+  async function signOut() {
+    try {
+      setIsLoadingStorageData(true);
+      setUser({} as UserDTO);
+      await storageUserRemove();
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoadingStorageData(false);
+    }
+  }
+
   useEffect(() => {
     loadUserData();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isLoadingStorageData, user, signIn }}>
+    <AuthContext.Provider
+      value={{ isLoadingStorageData, user, signIn, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

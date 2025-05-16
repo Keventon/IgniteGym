@@ -6,8 +6,8 @@ import {
 import { GluestackUIProvider } from "@gluestack-ui/themed";
 import { config } from "./config/gluestack-ui.config";
 import { Loading } from "@components/Loading";
-import { SignUp } from "@screens/SignUp";
 import { Routes } from "@routes/index";
+import { AuthContext, AuthContextProvider } from "@contexts/AuthContext";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -17,7 +17,9 @@ export default function App() {
 
   return (
     <GluestackUIProvider config={config}>
-      {fontsLoaded ? <Routes /> : <Loading />}
+      <AuthContextProvider>
+        {fontsLoaded ? <Routes /> : <Loading />}
+      </AuthContextProvider>
     </GluestackUIProvider>
   );
 }

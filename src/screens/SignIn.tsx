@@ -17,6 +17,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { useAuth } from "@hooks/useAuth";
 
 type FormData = {
   email: string;
@@ -25,6 +26,7 @@ type FormData = {
 
 export function SignIn() {
   const navigation = useNavigation<AuthNavigatorRoutesProps>();
+  const { signIn } = useAuth();
 
   const {
     control,
@@ -53,8 +55,8 @@ export function SignIn() {
     navigation.navigate("SignUp");
   }
 
-  function handleLogin(data: FormData) {
-    console.log(data);
+  function handleLogin({ email, password }: FormData) {
+    signIn(email, password);
   }
 
   return (

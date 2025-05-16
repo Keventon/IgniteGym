@@ -5,6 +5,7 @@ import {
   Text,
   Heading,
   ScrollView,
+  useToast,
 } from "@gluestack-ui/themed";
 
 import BackgrundImg from "@assets/background.png";
@@ -18,6 +19,10 @@ import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useAuth } from "@hooks/useAuth";
+import { AppError } from "@utils/AppError";
+import { ToastMessage } from "@components/ToastMessage";
+import { BackHandler } from "react-native";
+import { useState } from "react";
 
 type FormData = {
   email: string;
@@ -25,8 +30,12 @@ type FormData = {
 };
 
 export function SignIn() {
+  const [isLoading, setIsLoading] = useState(false);
+
   const navigation = useNavigation<AuthNavigatorRoutesProps>();
   const { signIn } = useAuth();
+
+  const toast = useToast();
 
   const {
     control,
@@ -55,8 +64,42 @@ export function SignIn() {
     navigation.navigate("SignUp");
   }
 
-  function handleLogin({ email, password }: FormData) {
-    signIn(email, password);
+  async function handleLogin({ email, password }: FormData) {
+    try {
+      setIsLoading(true);
+      await signIn(email, password);
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+
+      const title = isAppError
+        ? error.message
+        : "Não foi possível entrar. Tente novamente mais tarde.";
+
+      setIsLoading(false);
+
+      toast.show({
+        placement: "top",
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            title={title}
+            action="error"
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+    }
+  }
+
+  if (!(BackHandler as any).removeEventListener) {
+    (BackHandler as any).removeEventListener = (
+      eventName: string,
+      handler: () => boolean
+    ) => {
+      console.warn(
+        "BackHandler.removeEventListener está obsoleto. Use subscription.remove()"
+      );
+    };
   }
 
   return (
@@ -112,7 +155,11 @@ export function SignIn() {
               )}
             />
 
-            <Button title="Acessar" onPress={handleSubmit(handleLogin)} />
+            <Button
+              title="Acessar"
+              onPress={handleSubmit(handleLogin)}
+              isLoading={isLoading}
+            />
           </Center>
 
           <Center flex={1} justifyContent="flex-end" mb="$4">

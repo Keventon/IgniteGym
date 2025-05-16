@@ -23,6 +23,8 @@ import axios from "axios";
 import { ToastMessage } from "@components/ToastMessage";
 import { BackHandler } from "react-native";
 import { AppError } from "@utils/AppError";
+import { useState } from "react";
+import { useAuth } from "@hooks/useAuth";
 
 type FormDataProps = {
   name: string;
@@ -45,6 +47,8 @@ const signUpSchema = yup.object({
 });
 
 export function SignUp() {
+  const [isLoading, setIsLoading] = useState(false);
+
   const {
     control,
     handleSubmit,
@@ -61,6 +65,7 @@ export function SignUp() {
 
   const navigation = useNavigation<AuthNavigatorRoutesProps>();
   const toast = useToast();
+  const { signIn } = useAuth();
 
   function handleNavigateToSignIn() {
     navigation.goBack();
@@ -68,9 +73,12 @@ export function SignUp() {
 
   async function handleSignUp({ name, email, password }: FormDataProps) {
     try {
-      const response = await api.post("/users", { name, email, password });
-      console.log(response.data);
+      setIsLoading(true);
+
+      await api.post("/users", { name, email, password });
+      await signIn(email, password);
     } catch (error) {
+      setIsLoading(false);
       const isAppError = error instanceof AppError;
 
       const title = isAppError
@@ -192,6 +200,7 @@ export function SignUp() {
             <Button
               title="Criar e acessar"
               onPress={handleSubmit(handleSignUp)}
+              isLoading={isLoading}
             />
           </Center>
 

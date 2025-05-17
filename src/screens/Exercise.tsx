@@ -36,6 +36,7 @@ type RouteParamsProps = {
 export function Exercise() {
   const [exercise, setExercise] = useState<ExerciseDTO>({} as ExerciseDTO);
   const [isLoading, setIsLoading] = useState(true);
+  const [submitRegisterLoading, setSubmitRegisterLoading] = useState(false);
 
   const navigation = useNavigation<AppNavigatorRoutesProps>();
   const route = useRoute();
@@ -76,15 +77,52 @@ export function Exercise() {
     }
   }
 
+  async function handleExerciseHistoryRegister() {
+    try {
+      setSubmitRegisterLoading(true);
+
+      await api.post("/history", { exercise_id: exerciseId });
+
+      toast.show({
+        placement: "top",
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            title="Parabéns! Exercício registrado no seu histórico."
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+
+      navigation.navigate("History");
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+
+      const title = isAppError
+        ? error.message
+        : "Não foi possível registrar o exercício como concluído.";
+
+      toast.show({
+        placement: "top",
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            title={title}
+            action="error"
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+    } finally {
+      setSubmitRegisterLoading(false);
+    }
+  }
+
   if (!(BackHandler as any).removeEventListener) {
     (BackHandler as any).removeEventListener = (
       eventName: string,
       handler: () => boolean
-    ) => {
-      console.warn(
-        "BackHandler.removeEventListener está obsoleto. Use subscription.remove()"
-      );
-    };
+    ) => {};
   }
 
   useEffect(() => {
@@ -163,7 +201,11 @@ export function Exercise() {
                 </HStack>
               </HStack>
 
-              <Button title="Marcar como realizado" />
+              <Button
+                title="Marcar como realizado"
+                isLoading={submitRegisterLoading}
+                onPress={handleExerciseHistoryRegister}
+              />
             </Box>
           </VStack>
         </ScrollView>

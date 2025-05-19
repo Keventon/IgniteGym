@@ -88,6 +88,8 @@ export function SignIn() {
           />
         ),
       });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -95,11 +97,7 @@ export function SignIn() {
     (BackHandler as any).removeEventListener = (
       eventName: string,
       handler: () => boolean
-    ) => {
-      console.warn(
-        "BackHandler.removeEventListener está obsoleto. Use subscription.remove()"
-      );
-    };
+    ) => {};
   }
 
   return (

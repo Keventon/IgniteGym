@@ -12,30 +12,41 @@ import { Controller, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { useAuth } from "@hooks/useAuth";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { api } from "@services/api";
+import { AppError } from "@utils/AppError";
 
 const changePerfilSchema = yup.object({
   name: yup.string().optional(),
   email: yup.string().optional(),
   password: yup
     .string()
-    .min(8, "A senha tem que ter no mínimo 8 digitos.")
+    .min(6, "A senha tem que ter no mínimo 6 digitos.")
     .nullable()
     .transform((value) => (!!value ? value : null)),
   old_password: yup
     .string()
-    .min(8, "A senha tem que ter no mínimo 8 digitos.")
+    .min(6, "A senha tem que ter no mínimo 6 digitos.")
     .nullable()
     .transform((value) => (!!value ? value : null)),
   confirm_password: yup
     .string()
     .oneOf([yup.ref("password")], "As senhas precisam ser iguais.")
     .nullable()
-    .transform((value) => (!!value ? value : null)),
+    .transform((value) => (!!value ? value : null))
+    .when("password", {
+      is: (Field: any) => Field,
+      then: (schema) =>
+        schema
+          .required("Informe a confirmação da senha.")
+          .required("Informe a confirmação da senha.")
+          .transform((value) => (!!value ? value : null)),
+    }),
 });
 
 export function Profile() {
   const [image, setImage] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { user, updateProfile } = useAuth();
   const toast = useToast();
 
   const {
@@ -99,7 +110,47 @@ export function Profile() {
   }
 
   const handleProfileUpdate = async (data: any) => {
-    console.log(data);
+    try {
+      setIsUpdating(true);
+
+      const userUpdated = user;
+      userUpdated.name = data.name;
+
+      await api.put("/users", data);
+      await updateProfile(userUpdated);
+
+      toast.show({
+        placement: "top",
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            title="Perfil atualizado!"
+            action="success"
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+
+      const title = isAppError
+        ? error.message
+        : "Não foi possível atualizar o perfil. Tente novamente mais tarde.";
+
+      toast.show({
+        placement: "top",
+        render: ({ id }) => (
+          <ToastMessage
+            id={id}
+            title={title}
+            action="error"
+            onClose={() => toast.close(id)}
+          />
+        ),
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -211,6 +262,7 @@ export function Profile() {
 
             <Button
               title="Atualizar"
+              isLoading={isUpdating}
               onPress={handleSubmit(handleProfileUpdate)}
             />
           </Center>

@@ -14,6 +14,9 @@ import { useAuth } from "@hooks/useAuth";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { api } from "@services/api";
 import { AppError } from "@utils/AppError";
+import { removeAccentsAndSpecialChars } from "@utils/removeAccentAndSpecialChars";
+
+import defaultUserPhotoImg from "@assets/userPhotoDefault.png";
 
 const changePerfilSchema = yup.object({
   name: yup.string().optional(),
@@ -70,18 +73,18 @@ export function Profile() {
 
   async function handleUserPhotoSelect() {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const photoSelected = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [4, 4],
         quality: 1,
       });
 
-      if (result.canceled) {
+      if (photoSelected.canceled) {
         return;
       }
 
-      const photoUri = result.assets[0].uri;
+      const photoUri = photoSelected.assets[0].uri;
 
       if (photoUri) {
         const photoInfo = (await FileSystem.getInfoAsync(photoUri)) as {
@@ -102,7 +105,45 @@ export function Profile() {
           });
         }
 
-        setImage(photoUri);
+        const fileExtension = photoUri.split(".").pop();
+        const userName = user.name.trim().split(" ").join("-");
+
+        const photoFile = {
+          name: `${removeAccentsAndSpecialChars(
+            userName
+          )}.${fileExtension}`.toLowerCase(),
+          uri: photoUri,
+          type: `${photoSelected.assets[0].type}/${fileExtension}`,
+        } as any;
+
+        const userPhotoUploadForm = new FormData();
+        userPhotoUploadForm.append("avatar", photoFile);
+
+        const avatarUpdatedResponse = await api.patch(
+          "/users/avatar",
+          userPhotoUploadForm,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        const userUpdated = user;
+        userUpdated.avatar = avatarUpdatedResponse.data.avatar;
+        await updateProfile(userUpdated);
+
+        toast.show({
+          placement: "top",
+          render: ({ id }) => (
+            <ToastMessage
+              id={id}
+              title="Foto atualizada!"
+              action="success"
+              onClose={() => toast.close(id)}
+            />
+          ),
+        });
       }
     } catch (error) {
       console.log(error);
@@ -160,7 +201,11 @@ export function Profile() {
       <ScrollView contentContainerStyle={{ paddingBottom: 36 }}>
         <Center mt="$6" px="$10">
           <UserPhoto
-            source={image || "https://github.com/keventon.png"}
+            source={
+              user.avatar
+                ? { uri: `${api.defaults.baseURL}/avatar/${user.avatar}` }
+                : defaultUserPhotoImg
+            }
             alt="Foto de perfil"
             size="xl"
           />

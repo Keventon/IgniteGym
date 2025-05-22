@@ -8,7 +8,6 @@ import { api } from "@services/api";
 
 export function HomeHeader() {
   const { user, signOut } = useAuth();
-  console.log(user.avatar);
 
   return (
     <HStack bg="$gray600" pt="$16" pb="$5" px="$8" alignItems="center" gap="$4">

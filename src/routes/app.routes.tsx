@@ -40,7 +40,8 @@ export function AppRoutes() {
           backgroundColor: tokens.colors.gray600,
           borderTopWidth: 0,
           height: Platform.OS === "ios" ? 96 : 82,
-          paddingBottom: tokens.space["12"],
+          paddingBottom:
+            Platform.OS === "ios" ? tokens.space["12"] : tokens.space["4"],
         },
         tabBarLabelPosition: "beside-icon",
       }}
